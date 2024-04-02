@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event List</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  #eventsList {
+    list-style-type: none;
+    padding: 0;
+    margin: 0 auto;
+    max-width: 600px;
+  }
+
+  #eventsList li {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  #eventsList li:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .event-details {
+    margin-top: 15px;
+  }
+
+  .event-details span {
+    display: block;
+    margin-bottom: 10px;
+    color: #333;
+  }
+
+  .poster-container {
+    text-align: center;
+  }
+
+  .poster-container img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .authorize-button {
+    background-color: #ff3333;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .authorize-button:hover {
+    background-color: #cc0000;
+  }
+
+  .not-approved .authorize-button {
+    display: inline-block;
+  }
+
+  .approved .authorize-button {
+    display: none;
+  }
+</style>
+</head>
+<body>
+  <h1>Event List</h1>
+  <ul id="eventsList"></ul>
+
+
+ <script>
+  // Function to display events
+  function displayEvents(eventsData) {
+    // Check if eventsData.events is an array
+    if (!Array.isArray(eventsData.events)) {
+      console.error('Events data is not an array:', eventsData.events);
+      return;
+    }
+
+    // Check if the eventsList container exists
+    var eventsListContainer = document.getElementById('eventsList');
+    if (!eventsListContainer) {
+      console.error('EventsList container does not exist');
+      return;
+    }
+
+    // Clear previous events
+    eventsListContainer.innerHTML = '';
+
+    // Iterate over each event and create HTML elements to display them
+    eventsData.events.forEach(function(event) {
+      // Create a list item (li) element for the event
+      var eventItem = document.createElement('li');
+
+      // Apply different styles based on isApproved value
+      if (event.isApproved === 'F') {
+        eventItem.classList.add('not-approved');
+      } else if (event.isApproved === 'T') {
+        eventItem.classList.add('approved');
+      }
+
+      // Event details container
+      var eventDetails = document.createElement('div');
+      eventDetails.classList.add('event-details');
+
+      // Add event details
+    //   var eventIDSpan = document.createElement('span');
+    //   eventIDSpan.textContent = `Event ID: ${event.eventID}`;
+    //   eventDetails.appendChild(eventIDSpan);
+
+      var eventNameSpan = document.createElement('span');
+      eventNameSpan.textContent = `Name: ${event.name}`;
+      eventDetails.appendChild(eventNameSpan);
+
+      var emailSpan = document.createElement('span');
+      emailSpan.textContent = `Email: ${event.email}`;
+      eventDetails.appendChild(emailSpan);
+
+      var eventSubjectSpan = document.createElement('span');
+      eventSubjectSpan.textContent = `Subject: ${event.subject}`;
+      eventDetails.appendChild(eventSubjectSpan);
+
+      var eventMessageSpan = document.createElement('span');
+      eventMessageSpan.textContent = `Message: ${event.message}`;
+      eventDetails.appendChild(eventMessageSpan);
+
+      // Poster image container
+      var posterContainer = document.createElement('div');
+      posterContainer.classList.add('poster-container');
+
+      // Create and append image element
+      var posterImage = document.createElement('img');
+      if (event.posterB64EncodedString) {
+        // Convert base64 to data URI (if poster exists)
+        posterImage.src = `data:image/jpeg;base64,${event.posterB64EncodedString}`;
+      } else {
+        // Set a placeholder image or handle the case of no poster
+        posterImage.src = 'placeholder.jpg'; // Replace with your placeholder image path
+      }
+      posterContainer.appendChild(posterImage);
+
+      // Append poster container and event details to the event item
+      eventItem.appendChild(posterContainer);
+      eventItem.appendChild(eventDetails);
+
+      // Create and append authorize button only if isApproved is 'F'
+      if (event.isApproved === 'F') {
+        var authorizeButton = document.createElement('button');
+        authorizeButton.textContent = 'Authorize';
+        authorizeButton.classList.add('authorize-button');
+        authorizeButton.addEventListener('click', function() {
+          // Handle authorize button click
+          // Call the API to authorize the event and remove the button
+          authorizeEvent(event.eventID, authorizeButton);
+        });
+        eventItem.appendChild(authorizeButton);
+      }
+
+      // Append the event item to the eventsList container
+      eventsListContainer.appendChild(eventItem);
+    });
+  }
+
+  // Function to handle authorization of event and remove the authorize button
+  async function authorizeEvent(eventID, authorizeButton) {
+    try {
+      // Make API request to authorize the event
+      var response = await fetch('https://vhdpur5w13.execute-api.ap-south-1.amazonaws.com/prod/authorize-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          eventID: eventID
+        })
+      });
+
+      // Check if authorization is successful
+      if (response.ok) {
+        console.log('Event authorized successfully:', eventID);
+        // Remove the authorize button
+        authorizeButton.parentNode.removeChild(authorizeButton);
+      } else {
+        console.error('Failed to authorize event:', eventID);
+        // Handle authorization failure
+      }
+    } catch (error) {
+      console.error('Error authorizing event:', error);
+    }
+  }
+
+  // Fetch events data from API
+  async function fetchEvents() {
+    try {
+      // Make API request with GET method (no need to specify for GET)
+      var response = await fetch('https://vhdpur5w13.execute-api.ap-south-1.amazonaws.com/prod/get-events');
+      var eventData = await response.json();
+
+      // Display events on the screen
+      displayEvents(eventData);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  }
+
+  // Call fetchEvents function to fetch and display events when the page loads
+  fetchEvents();
+
+
+  </script>
+</body>
+</html>
