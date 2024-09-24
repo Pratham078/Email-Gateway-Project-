@@ -29,6 +29,12 @@ The goal is to create a user-friendly system where any student wishing to organi
    
    This ensures that the entire college community is informed about the upcoming event.
 
+5. **Technologies Used**:
+   - Dynamo DB for storage
+   - AWS Lambda
+   - AWS Simple Email Service
+   - AWS API Gateway
+
 ## Benefits
 - **Simplified Event Organization**: Makes it easier for students to propose and organize events.
 - **Efficient Approval Process**: Streamlines the approval process for authorities.
